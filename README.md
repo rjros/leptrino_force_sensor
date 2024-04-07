@@ -20,7 +20,7 @@ To use this ROS 2 package, you need to follow these installation steps:
 3. Source your ROS 2 workspace:
 
     ```bash
-    source install/setup.bash
+    source install/local_setup.bash
     ```
 
 ## Usage
