@@ -49,7 +49,7 @@ LeptrinoForceSensor::LeptrinoForceSensor(): Node("leptrino_wrench")
 
     int ms_time= 1000/rate; // time in ms for desired frequency
 
-    publisher_ = this->create_publisher<geometry_msgs::msg::WrenchStamped>("leptrino_wrench_topic", 10);
+    publisher_ = this->create_publisher<geometry_msgs::msg::WrenchStamped>("sensor_wrench", 10);
     timer_ = this->create_wall_timer(std::chrono::milliseconds(ms_time), std::bind(&LeptrinoForceSensor::publishMessage, this));
 }
 
@@ -68,17 +68,19 @@ void LeptrinoForceSensor :: publishMessage() {
     
     memset(CommRcvBuff,0,sizeof(CommRcvBuff)); 
     rt = Comm_GetRcvData( CommRcvBuff );
-    //Create condition if msg fails
-    stForce = (ST_R_DATA_GET_F *)CommRcvBuff;
-    message->header.stamp = this->now();
-    message->header.frame_id = "leptrino_link"; // Change this to your desired frame_id
-    message->wrench.force.x = stForce->ssForce[0] * conversion_factor[0]; 
-    message->wrench.force.y = stForce->ssForce[1] * conversion_factor[1]; 
-    message->wrench.force.z = stForce->ssForce[2] * conversion_factor[2];
-    message->wrench.torque.x = stForce->ssForce[3] * conversion_factor[3];
-    message->wrench.torque.y = stForce->ssForce[4] * conversion_factor[4];
-    message->wrench.torque.z = stForce->ssForce[5] * conversion_factor[5];
-    publisher_->publish(std::move(message));
+    if (rt > 0) {
+      stForce = (ST_R_DATA_GET_F *)CommRcvBuff;
+      message->header.stamp = this->now();
+      message->header.frame_id = "leptrino_link"; // Change this to your desired frame_id
+      message->wrench.force.x = stForce->ssForce[0] * conversion_factor[0]; 
+      message->wrench.force.y = stForce->ssForce[1] * conversion_factor[1]; 
+      message->wrench.force.z = stForce->ssForce[2] * conversion_factor[2];
+      message->wrench.torque.x = stForce->ssForce[3] * conversion_factor[3];
+      message->wrench.torque.y = stForce->ssForce[4] * conversion_factor[4];
+      message->wrench.torque.z = stForce->ssForce[5] * conversion_factor[5];
+      publisher_->publish(std::move(message));
+    }
+  
     }
 
 }

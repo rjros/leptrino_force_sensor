@@ -37,7 +37,7 @@ To use the 6-axis force sensor with ROS 2, follow these steps:
 
 3. Check the published topic as follows:
     ```bash
-    ros2 topic echo /leptrino_force_sensor/leptrino_wrench_topic
+    ros2 topic echo /leptrino_force_sensor/sensor_wrench
     ```
 ## Additional Resources
 
