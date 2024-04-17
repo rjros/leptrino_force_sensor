@@ -73,12 +73,12 @@ void LeptrinoForceSensor :: publishMessage() {
       stForce = (ST_R_DATA_GET_F *)CommRcvBuff;
       message->header.stamp = this->now();
       message->header.frame_id = "leptrino_link"; // Change this to your desired frame_id
-      message->wrench.force.x = std::round(stForce->ssForce[0] * conversion_factor[0]*1000)/1000; 
-      message->wrench.force.y = std::round(stForce->ssForce[1] * conversion_factor[1]*1000)/1000; 
-      message->wrench.force.z = std::round(stForce->ssForce[2] * conversion_factor[2]*1000)/1000;
-      message->wrench.torque.x = std::round(stForce->ssForce[3] * conversion_factor[3]*1000)/1000;
-      message->wrench.torque.y = std::round(stForce->ssForce[4] * conversion_factor[4]*1000)/1000;
-      message->wrench.torque.z = std::round(stForce->ssForce[5] * conversion_factor[5]*1000)/1000;
+      message->wrench.force.x = std::round(stForce->ssForce[0] * conversion_factor[0]*10000)/10000; 
+      message->wrench.force.y = std::round(stForce->ssForce[1] * conversion_factor[1]*10000)/10000; 
+      message->wrench.force.z = std::round(stForce->ssForce[2] * conversion_factor[2]*10000)/10000;
+      message->wrench.torque.x = std::round(stForce->ssForce[3] * conversion_factor[3]*10000)/10000;
+      message->wrench.torque.y = std::round(stForce->ssForce[4] * conversion_factor[4]*10000)/10000;
+      message->wrench.torque.z = std::round(stForce->ssForce[5] * conversion_factor[5]*10000)/10000;
       publisher_->publish(std::move(message));
     }
   
