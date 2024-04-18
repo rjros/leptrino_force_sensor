@@ -33,9 +33,9 @@
 LeptrinoForceSensor::LeptrinoForceSensor(): Node("leptrino_wrench")
 {
     
-    declareParameters();
+    DeclareParameters();
    // Initialize the sensor
-    if (!initializeSensor()) {
+    if (!InitializeSensor()) {
         RCLCPP_ERROR(this->get_logger(), "Sensor initialization failed. Shutting down node.");
         // rclcpp::shutdown();
         return;
@@ -47,14 +47,13 @@ LeptrinoForceSensor::LeptrinoForceSensor(): Node("leptrino_wrench")
     rate= 100;
     } 
     RCLCPP_INFO(this->get_logger(), "Publishing rate %d Hz",rate );
-
+    // GetWrench();
     int ms_time= 1000/rate; // time in ms for desired frequency
-
     publisher_ = this->create_publisher<geometry_msgs::msg::WrenchStamped>("sensor_wrench", 10);
     timer_ = this->create_wall_timer(std::chrono::milliseconds(ms_time), std::bind(&LeptrinoForceSensor::publishMessage, this));
 }
 
-void LeptrinoForceSensor :: declareParameters() {
+void LeptrinoForceSensor :: DeclareParameters() {
      // Declare communication parameters
         this->declare_parameter("com_port","/dev/ttyACM0");
         this->declare_parameter("rate",100);
@@ -62,27 +61,23 @@ void LeptrinoForceSensor :: declareParameters() {
 
 void LeptrinoForceSensor :: publishMessage() {
     
-    auto message = std::make_unique<geometry_msgs::msg::WrenchStamped>(); 
-    int rt=0;
-    Comm_Rcv();
-		if ( Comm_CheckRcv() != 0 ) {		//��M�f�[�^�L
+    GetWrench();
+    // auto message = std::make_unique<geometry_msgs::msg::WrenchStamped>(); 
+    auto message=geometry_msgs::msg::WrenchStamped();
+    message.header.stamp = this->now();
+    message.header.frame_id = "leptrino_link"; // Change this to your desired frame_id
+
+    // Reduce precision for force and torque values
+    message.wrench.force.x = std::round(wrenchRef_[0] * 10000.0) / 10000.0;
+    message.wrench.force.y = std::round(wrenchRef_[1] * 10000.0) / 10000.0;
+    message.wrench.force.z = std::round(wrenchRef_[2] * 10000.0) / 10000.0;
+    message.wrench.torque.x = std::round(wrenchRef_[3] * 10000.0) / 10000.0;
+    message.wrench.torque.y = std::round(wrenchRef_[4] * 10000.0) / 10000.0;
+    message.wrench.torque.z = std::round(wrenchRef_[5] * 10000.0) / 10000.0;
+    publisher_->publish(message);
+
     
-    memset(CommRcvBuff,0,sizeof(CommRcvBuff)); 
-    rt = Comm_GetRcvData( CommRcvBuff );
-    if (rt > 0) {
-      stForce = (ST_R_DATA_GET_F *)CommRcvBuff;
-      message->header.stamp = this->now();
-      message->header.frame_id = "leptrino_link"; // Change this to your desired frame_id
-      message->wrench.force.x = std::round(stForce->ssForce[0] * conversion_factor[0]*10000)/10000; 
-      message->wrench.force.y = std::round(stForce->ssForce[1] * conversion_factor[1]*10000)/10000; 
-      message->wrench.force.z = std::round(stForce->ssForce[2] * conversion_factor[2]*10000)/10000;
-      message->wrench.torque.x = std::round(stForce->ssForce[3] * conversion_factor[3]*10000)/10000;
-      message->wrench.torque.y = std::round(stForce->ssForce[4] * conversion_factor[4]*10000)/10000;
-      message->wrench.torque.z = std::round(stForce->ssForce[5] * conversion_factor[5]*10000)/10000;
-      publisher_->publish(std::move(message));
-    }
-  
-    }
+    
 
 }
 
@@ -92,7 +87,7 @@ void LeptrinoForceSensor :: StopSensor(){
 }
 
 
-bool LeptrinoForceSensor::initializeSensor(){
+bool LeptrinoForceSensor::InitializeSensor(){
 
   int rt=0;
   int endFlag=0;
@@ -252,6 +247,42 @@ void LeptrinoForceSensor :: GetLimit(void)
 
   SendData(SendBuff, len);
 }
+
+void LeptrinoForceSensor ::GetWrench(void)
+{
+  int rt=0;
+  Comm_Rcv();
+	if ( Comm_CheckRcv() != 0 ) {		
+    memset(CommRcvBuff,0,sizeof(CommRcvBuff)); 
+    rt = Comm_GetRcvData( CommRcvBuff );
+      if (rt > 0) {
+        stForce = (ST_R_DATA_GET_F *)CommRcvBuff;
+        wrenchRef_[0] = stForce->ssForce[0] * conversion_factor[0]; 
+        wrenchRef_[1] = stForce->ssForce[1] * conversion_factor[1]; 
+        wrenchRef_[2] = stForce->ssForce[2] * conversion_factor[2]; 
+        wrenchRef_[3] = stForce->ssForce[3] * conversion_factor[3]; 
+        wrenchRef_[4] = stForce->ssForce[4] * conversion_factor[4]; 
+        wrenchRef_[5] = stForce->ssForce[5] * conversion_factor[5]; 
+        
+        if(initRead_&&abs(wrenchRef_[2])>0.0000f)
+          {
+          offset_=wrenchRef_;
+          RCLCPP_INFO(this->get_logger(), "offset %f",offset_[2]);      
+          initRead_=false;
+          }
+
+        }    
+      } 
+
+
+    for (int i=0;i<6;i++)
+    {
+      wrenchRef_[i]=wrenchRef_[i]-offset_[i];
+    }
+
+}
+
+
 
 void LeptrinoForceSensor :: SerialStart(void)
 {

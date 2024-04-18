@@ -39,13 +39,14 @@ class LeptrinoForceSensor : public rclcpp::Node {
 
 
     private:
-        void declareParameters();
-        bool initializeSensor();
+        void DeclareParameters();
+        bool InitializeSensor();
         void App_Init(void);
         void App_Close(void);
         ULONG SendData(UCHAR *pucInput, USHORT usSize);
         void GetProductInfo(void);
         void GetLimit(void);
+        void GetWrench(void);
         void SerialStart(void);
         void SerialStop(void);
 
@@ -73,5 +74,8 @@ class LeptrinoForceSensor : public rclcpp::Node {
         
         std::string com_port;
         int rate;
+        bool initRead_{true};
+        std::vector <double> offset_=std::vector<double>(6,0);
+        std::vector <double> wrenchRef_=std::vector<double>(6,0);
 
 };
